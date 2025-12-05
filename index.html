@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bluesky Feed</title>
+    <title>Bluesky Feed V3</title>
     <style>
         /* --- 基本設定 --- */
         :root {
@@ -13,6 +13,7 @@
             --text-sub: #42576c;
             --accent-blue: #0085ff;
             --border-color: #e1e3e5;
+            --hover-bg: #f5f7f9;
         }
 
         body {
@@ -22,82 +23,146 @@
             padding: 20px;
             color: var(--text-main);
         }
-        
-        /* Google Sites用背景透過設定（必要ならコメントを外す） */
+
+        /* Google Sites用背景透過（必要ならコメントアウトを外す） */
         /* body { background-color: transparent; padding: 10px 0; } */
 
         .container { max-width: 600px; margin: 0 auto; }
+
         .post-card {
-            background-color: var(--card-bg); border: 1px solid var(--border-color);
-            border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; gap: 12px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background-color: #eee; flex-shrink: 0; }
+
+        .avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #eee;
+            flex-shrink: 0;
+        }
+
         .content { flex: 1; min-width: 0; }
-        .header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
-        .display-name { font-weight: 700; font-size: 15px; color: var(--text-main); text-decoration: none; }
-        .handle { color: var(--text-sub); font-size: 14px; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .header {
+            display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;
+        }
+
+        .display-name {
+            font-weight: 700; font-size: 15px; color: var(--text-main); text-decoration: none;
+        }
+        .display-name:hover { text-decoration: underline; }
+
+        .handle {
+            color: var(--text-sub); font-size: 14px; text-decoration: none;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
         .time { color: var(--text-sub); font-size: 14px; white-space: nowrap; }
-        .text { font-size: 15px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
-        .post-image { margin-top: 10px; border-radius: 8px; max-width: 100%; height: auto; border: 1px solid var(--border-color); cursor: zoom-in; transition: opacity 0.2s; }
+
+        /* 本文のスタイル修正：途切れ防止 */
+        .text {
+            font-size: 15px;
+            line-height: 1.5;
+            white-space: pre-wrap; /* 改行を反映 */
+            word-wrap: break-word; /* 長い単語を折り返す */
+            overflow-wrap: break-word;
+            margin-bottom: 10px;
+        }
+
+        /* リンクの色 */
+        .text a { color: var(--accent-blue); text-decoration: none; }
+        .text a:hover { text-decoration: underline; }
+
+        /* 画像スタイル */
+        .post-image {
+            margin-top: 8px;
+            border-radius: 8px;
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--border-color);
+            cursor: zoom-in;
+            display: block;
+        }
         .post-image:hover { opacity: 0.9; }
-        a { color: var(--accent-blue); text-decoration: none; } a:hover { text-decoration: underline; }
+
+        /* --- リンクカード（YouTubeや記事）のスタイル --- */
+        .embed-card {
+            margin-top: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: background-color 0.2s;
+        }
+        .embed-card:hover {
+            background-color: var(--hover-bg);
+            text-decoration: none;
+        }
+        .embed-thumb {
+            width: 100%;
+            height: 160px; /* サムネの高さ */
+            object-fit: cover;
+            display: block;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .embed-info {
+            padding: 10px 12px;
+        }
+        .embed-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* 2行で省略 */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .embed-desc {
+            font-size: 13px;
+            color: var(--text-sub);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .embed-host {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
         .loading { text-align: center; color: var(--text-sub); margin-top: 20px; }
 
-        /* --- モーダル（拡大表示）のスタイル --- */
+        /* --- モーダル（前回と同じ） --- */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0; top: 0; width: 100%; height: 100%;
-            overflow: hidden;
-            background-color: rgba(0,0,0,0.9);
-            align-items: center; justify-content: center;
-            opacity: 0;
-            transition: opacity 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-            backdrop-filter: blur(4px);
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); backdrop-filter: blur(4px);
         }
-
-        .modal.show {
-            display: flex;
-            opacity: 1;
-        }
-
+        .modal.show { display: flex; opacity: 1; }
         .modal-content {
-            max-width: 93%;
-            max-height: 93%;
-            object-fit: contain;
-            border-radius: 4px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            transform: scale(0.92) translateY(30px);
+            max-width: 93%; max-height: 93%; object-fit: contain; border-radius: 4px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); transform: scale(0.92) translateY(30px);
             transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
         }
-        
-        .modal.show .modal-content {
-            transform: scale(1) translateY(0);
-        }
-
+        .modal.show .modal-content { transform: scale(1) translateY(0); }
         .close-btn {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            color: rgba(255,255,255,0.8);
-            font-size: 50px;
-            font-weight: 300;
-            cursor: pointer;
-            z-index: 1001;
-            line-height: 60px;
-            background: rgba(0,0,0,0.4);
-            width: 60px; height: 60px;
-            text-align: center;
-            border-radius: 50%;
+            position: absolute; top: 20px; right: 30px; color: rgba(255,255,255,0.8);
+            font-size: 50px; font-weight: 300; cursor: pointer; z-index: 1001; line-height: 60px;
+            background: rgba(0,0,0,0.4); width: 60px; height: 60px; text-align: center; border-radius: 50%;
             transition: all 0.2s ease;
         }
-        
         .close-btn:hover {
-            color: #ffffff;
-            background: rgba(0,0,0,0.7);
-            transform: scale(1.1) rotate(90deg);
+            color: #ffffff; background: rgba(0,0,0,0.7); transform: scale(1.1) rotate(90deg);
         }
     </style>
 </head>
@@ -119,6 +184,24 @@
 
     const API_URL = `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${HANDLE}&filter=posts_no_replies&limit=10`;
 
+    // テキスト内のURLをリンク化する関数
+    function linkify(text) {
+        if (!text) return '';
+        // HTMLエスケープ（セキュリティ対策）
+        let escapedText = text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+        // URLをリンクに変換
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return escapedText.replace(urlRegex, function(url) {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
+    }
+
     async function fetchBlueskyPosts() {
         const container = document.getElementById('feed-container');
         try {
@@ -134,16 +217,41 @@
                 const date = new Date(record.createdAt);
                 const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
                 
+                // カード要素作成
                 const card = document.createElement('div');
                 card.className = 'post-card';
                 
+                // --- 1. 画像の処理 ---
                 let imagesHtml = '';
                 if (post.embed && post.embed.images) {
                     post.embed.images.forEach(img => {
                         imagesHtml += `<img src="${img.thumb}" data-fullsize="${img.fullsize}" class="post-image" alt="post image">`;
                     });
                 }
-                
+
+                // --- 2. リンクカード（YouTube等）の処理 ---
+                let embedCardHtml = '';
+                if (post.embed && post.embed.$type === 'app.bsky.embed.external') {
+                    const ext = post.embed.external;
+                    // サムネイルがある場合のみ画像を表示
+                    const thumbImg = ext.thumb ? `<img src="${ext.thumb}" class="embed-thumb" alt="link thumbnail">` : '';
+                    
+                    embedCardHtml = `
+                        <a href="${ext.uri}" target="_blank" class="embed-card">
+                            ${thumbImg}
+                            <div class="embed-info">
+                                <div class="embed-title">${ext.title || 'No Title'}</div>
+                                <div class="embed-desc">${ext.description || ''}</div>
+                                <div class="embed-host">${new URL(ext.uri).hostname}</div>
+                            </div>
+                        </a>
+                    `;
+                }
+
+                // 本文をリンク化して整形
+                const formattedText = linkify(record.text);
+
+                // HTML組み立て
                 card.innerHTML = `
                     <img src="${author.avatar}" class="avatar" alt="${author.displayName}">
                     <div class="content">
@@ -152,8 +260,9 @@
                             <a href="https://bsky.app/profile/${author.handle}" target="_blank" class="handle">@${author.handle}</a>
                             <span class="time">· ${timeStr}</span>
                         </div>
-                        <div class="text">${record.text || ''}</div>
+                        <div class="text">${formattedText}</div>
                         ${imagesHtml}
+                        ${embedCardHtml}
                     </div>
                 `;
                 container.appendChild(card);
@@ -165,7 +274,7 @@
     
     fetchBlueskyPosts();
 
-    // モーダル制御
+    // モーダル制御（前回と同じ）
     const modal = document.getElementById('image-modal');
     const modalImg = document.getElementById('expanded-image');
     const closeBtn = document.getElementsByClassName('close-btn')[0];
@@ -182,7 +291,6 @@
         modal.classList.remove('show');
         setTimeout(() => { modalImg.src = ''; }, 400);
     }
-
     modal.onclick = function(e) {
          if (e.target === modal) {
             modal.classList.remove('show');
